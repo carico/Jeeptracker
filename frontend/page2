@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>HomePage1</title>
+	<style>
+		body {
+			font-family: system-ui;
+		}
+		.absolute-box {
+			position: absolute;
+			bottom: -17px;
+			left: -82px;
+			width: 393px;
+			height: 60px;
+			background: #21A8D7;
+			border-radius: 20px;
+		}
+		.box {
+			flex: 1;
+			align-self: stretch;
+		}
+		.box2 {
+			width: 228px;
+			height: 1px;
+			background: #808080;
+			margin-right: 51px;
+		}
+		.box3 {
+			width: 112px;
+			height: 6px;
+			background: #D9D9D980;
+			border-radius: 100px;
+		}
+		.column {
+			align-self: stretch;
+			background-image: url('https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/bcc79252-6ec8-40f9-bd47-6b28deff93e0');
+			background-size: cover;
+			background-position: center;
+		}
+		.column2 {
+			align-self: stretch;
+			background: #21A8D766;
+			border-radius: 25px;
+			padding-top: 10px;
+			padding-bottom: 10px;
+			margin-bottom: 134px;
+			margin-left: 21px;
+			margin-right: 21px;
+		}
+		.column3 {
+			flex-shrink: 0;
+			display: flex;
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 3px;
+		}
+		.column4 {
+			align-self: stretch;
+			display: flex;
+			flex-direction: column;
+			align-items: flex-start;
+			background: #164A86;
+			border-radius: 50px;
+			padding-top: 14px;
+			padding-bottom: 14px;
+			gap: 4px;
+		}
+		.column5 {
+			display: flex;
+			flex-direction: column;
+			align-items: flex-start;
+			margin-left: 82px;
+			position: relative;
+		}
+		.contain {
+			display: flex;
+			flex-direction: column;
+			background: #FFFFFF;
+		}
+		.image {
+			width: 24px;
+			height: 24px;
+			margin-right: 17px;
+			object-fit: fill;
+		}
+		.image2 {
+			width: 35px;
+			height: 35px;
+			object-fit: fill;
+		}
+		.image3 {
+			width: 15px;
+			height: 15px;
+			margin-right: 21px;
+			object-fit: fill;
+		}
+		.image4 {
+			width: 5px;
+			height: 5px;
+			object-fit: fill;
+		}
+		.image5 {
+			width: 16px;
+			height: 16px;
+			margin-right: 20px;
+			object-fit: fill;
+		}
+		.image6 {
+			width: 1px;
+			height: 10px;
+			margin-right: 4px;
+			object-fit: fill;
+		}
+		.image7 {
+			width: 1px;
+			height: 9px;
+			object-fit: fill;
+		}
+		.image8 {
+			width: 30px;
+			height: 33px;
+			object-fit: fill;
+		}
+		.image9 {
+			width: 31px;
+			height: 31px;
+			object-fit: fill;
+		}
+		.image10 {
+			width: 100px;
+			height: 87px;
+			object-fit: fill;
+		}
+		.row-view {
+			align-self: stretch;
+			display: flex;
+			align-items: center;
+			background: #21A8D766;
+			border-radius: 10px;
+			padding: 5px 14px;
+			margin: 59px 21px 9px 21px;
+		}
+		.row-view2 {
+			align-self: stretch;
+			display: flex;
+			align-items: center;
+			margin-bottom: 9px;
+			margin-left: 31px;
+			margin-right: 31px;
+		}
+		.row-view3 {
+			align-self: stretch;
+			display: flex;
+			align-items: center;
+			margin-left: 31px;
+			margin-right: 31px;
+		}
+		.row-view4 {
+			display: flex;
+			align-items: center;
+			margin-right: 149px;
+			gap: 18px;
+		}
+		.scroll-view {
+			align-self: stretch;
+			display: flex;
+			flex-direction: column;
+			background: linear-gradient(180deg, #31A7E2, #164A86);
+			gap: 53px;
+		}
+		.text {
+			color: #FFFFFF;
+			font-size: 14px;
+			font-weight: bold;
+		}
+		.view {
+			align-self: stretch;
+		}
+		.view2 {
+			align-self: stretch;
+			display: flex;
+			flex-direction: column;
+			align-items: flex-end;
+			margin-bottom: 8px;
+		}
+		.view3 {
+			align-self: stretch;
+			display: flex;
+			flex-direction: column;
+			align-items: flex-end;
+			margin-bottom: 437px;
+		}
+		.view4 {
+			align-self: stretch;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+		}
+	</style>
+</head>
+<body>
+		<div class="contain">
+		<div class="scroll-view">
+			<div class="view">
+				<div class="column">
+					<div class="row-view">
+						<img
+							src="https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/5b24ad2f-cce5-4a66-b212-ccf35645296f" 
+							class="image"
+						/>
+						<span class="text" >
+							Search
+						</span>
+						<div class="box">
+						</div>
+						<img
+							src="https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/a4bd3b79-2ea6-491b-be62-054b47c350a5" 
+							class="image2"
+						/>
+					</div>
+					<div class="column2">
+						<div class="row-view2">
+							<img
+								src="https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/51f9cb4b-c273-4371-b745-038b44b91647" 
+								class="image3"
+							/>
+							<span class="text" >
+								Your Location
+							</span>
+							<div class="box">
+							</div>
+							<div class="column3">
+								<img
+									src="https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/e323fc9b-d952-4ee1-9bc4-f3bcfcc0c4a7" 
+									class="image4"
+								/>
+								<img
+									src="https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/21bb206b-0dba-4df5-9a31-491bd585a3de" 
+									class="image4"
+								/>
+								<img
+									src="https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/1d4ec94f-7870-42a4-8053-3f497a4b4abd" 
+									class="image4"
+								/>
+							</div>
+						</div>
+						<div class="view2">
+							<div class="box2">
+							</div>
+						</div>
+						<div class="row-view3">
+							<img
+								src="https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/73e06efe-7af2-4168-8b6f-f681b0f446e4" 
+								class="image5"
+							/>
+							<span class="text" >
+								Your Destination
+							</span>
+							<div class="box">
+							</div>
+							<img
+								src="https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/9c774007-c2bb-47a7-b182-161ae8a731cf" 
+								class="image6"
+							/>
+							<img
+								src="https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/af94fc5d-e465-47d9-8133-6b4f5cf92f20" 
+								class="image7"
+							/>
+						</div>
+					</div>
+					<div class="view3">
+						<div class="row-view4">
+							<img
+								src="https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/e33325f5-afa6-42b1-bb45-f67f86f89069" 
+								class="image8"
+							/>
+							<img
+								src="https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/33e29eee-8467-4cb3-8f86-8cd74f283a75" 
+								class="image9"
+							/>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="column4">
+				<div class="view4">
+					<div class="box3">
+					</div>
+				</div>
+				<div class="column5">
+					<img
+						src="https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/7f6cb757-96a4-4666-8455-76ff9e45787a" 
+						class="image10"
+					/>
+					<div class="absolute-box">
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>
