@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeepney Tracker</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; font-family: Arial; }
+        #map-container { display: none; height: 100%; }
+        #map { height: 70%; }
+        #controls { padding: 10px; background: #f9f9f9; }
+        #balance-popup { margin-top: 10px; }
+        #auth { padding: 20px; background: #f0f0f0; }
+        input { margin: 5px 0; padding: 5px; width: 150px; }
+        button { margin: 5px; padding: 5px 10px; }
+    </style>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+    <!-- html5-qrcode -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body>
+
+<!-- Authentication UI -->
+<div id="auth">
+    <h2>Jeepney Tracker</h2>
+    <div id="user-ui">
+        <input id="email" placeholder="Email" />
+        <input id="password" type="password" placeholder="Password" />
+        <button id="signup">Sign Up</button>
+        <button id="login">Login</button>
+    </div>
+    <div id="loggedin" style="display:none;">
+        <button id="logout">Logout</button>
+    </div>
+</div>
+
+<!-- Map and Controls -->
+<div id="map-container">
+    <div id="map"></div>
+    <div id="controls">
+        <input id="dest-lat" placeholder="Destination lat" />
+        <input id="dest-lng" placeholder="Destination lng" />
+        <button id="calc">Calculate Fare</button>
+        <div id="fare-result"></div>
+        <div id="balance-popup">Balance: ₱<span id="balance-amt">0.00</span> <button id="pay">Pay</button></div>
+        <div id="qr-area"></div>
+    </div>
+</div>
+
+<!-- Firebase config and app logic -->
+<script src="/src/firebase-config.js"></script>
+<script src="/src/app.js"></script>
+
+<script>
+    // Initialize the map
+    const map = L.map('map').setView([14.5995, 120.9842], 15);
+
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Fetch jeep locations from FastAPI
+    function loadJeepLocations() {
+        fetch('http://127.0.0.1:8000/locations')
+            .then(response => response.json())
+            .then(data => {
+                const routePoints = [];
+
+                data.forEach(loc => {
+                    // Add marker for each jeep
+                    L.marker([loc.lat, loc.lng])
+                        .addTo(map)
+                        .bindPopup(`Jeep ID: ${loc.id}`);
+
+                    // Save points for polyline
+                    routePoints.push([loc.lat, loc.lng]);
+                });
+
+                // Draw polyline connecting jeep positions
+                if (routePoints.length > 1) {
+                    L.polyline(routePoints, {color: 'blue'}).addTo(map);
+                }
+            })
+            .catch(err => console.error('Error fetching locations:', err));
+    }
+
+    // Load locations when map container is shown
+    document.addEventListener('DOMContentLoaded', () => {
+        // Example: show map after login (adjust as needed)
+        // document.getElementById('map-container').style.display = 'block';
+        loadJeepLocations();
+    });
+</script>
+
+</body>
+</html>
