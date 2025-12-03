@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 from dotenv import load_dotenv
 import firebase_admin
-from firebase_admin import auth as firebase_auth, credentials
+from firebase_admin import auth as firebase_auth, credentials, firestore
 
 # ----------------------------
 # Load environment
@@ -34,6 +34,7 @@ if not os.path.isfile(FIREBASE_CRED_JSON):
 
 cred = credentials.Certificate(FIREBASE_CRED_JSON)
 firebase_admin.initialize_app(cred)
+db = firestore.client()  # Firestore for persistent driver storage
 
 # ----------------------------
 # FastAPI app
@@ -55,6 +56,13 @@ class Location(BaseModel):
     lat: float
     lng: float
 
+class Driver(BaseModel):
+    id: str
+    name: str
+    lat: float
+    lng: float
+    vehicle_type: str = "Jeep"
+
 class RouteResponse(BaseModel):
     distance_m: float
     distance_km: float
@@ -63,7 +71,7 @@ class RouteResponse(BaseModel):
     fare_php: float
 
 # ----------------------------
-# In-memory storage
+# In-memory storage (for fast updates)
 # ----------------------------
 jeep_locations = {}
 
@@ -122,7 +130,7 @@ def verify_firebase_token(authorization: Optional[str] = Header(None)):
         raise HTTPException(status_code=401, detail=f"Token verification failed: {e}")
 
 # ----------------------------
-# Endpoints
+# Basic endpoints
 # ----------------------------
 @app.get("/")
 def root():
@@ -157,6 +165,43 @@ def get_route(
     )
 
 # ----------------------------
+# Drivers CRUD (Firestore-backed)
+# ----------------------------
+@app.get("/drivers", response_model=List[Driver])
+def get_drivers(user=Depends(verify_firebase_token)):
+    drivers_ref = db.collection("drivers")
+    docs = drivers_ref.stream()
+    return [Driver(**doc.to_dict()) for doc in docs]
+
+@app.post("/drivers", response_model=Driver)
+def add_driver(driver: Driver, user=Depends(verify_firebase_token)):
+    doc_ref = db.collection("drivers").document(driver.id)
+    if doc_ref.get().exists:
+        raise HTTPException(status_code=400, detail="Driver ID already exists")
+    doc_ref.set(driver.dict())
+    # also update in-memory
+    jeep_locations[driver.id] = {"id": driver.id, "lat": driver.lat, "lng": driver.lng}
+    return driver
+
+@app.put("/drivers/{driver_id}", response_model=Driver)
+def update_driver(driver_id: str, driver: Driver, user=Depends(verify_firebase_token)):
+    doc_ref = db.collection("drivers").document(driver_id)
+    if not doc_ref.get().exists:
+        raise HTTPException(status_code=404, detail="Driver not found")
+    doc_ref.update(driver.dict())
+    jeep_locations[driver.id] = {"id": driver.id, "lat": driver.lat, "lng": driver.lng}
+    return driver
+
+@app.delete("/drivers/{driver_id}")
+def delete_driver(driver_id: str, user=Depends(verify_firebase_token)):
+    doc_ref = db.collection("drivers").document(driver_id)
+    if not doc_ref.get().exists:
+        raise HTTPException(status_code=404, detail="Driver not found")
+    doc_ref.delete()
+    jeep_locations.pop(driver_id, None)
+    return {"message": "Driver deleted successfully"}
+
+# ----------------------------
 # Endpoint: get drivers with ETA to a user (role-based)
 # ----------------------------
 @app.get("/drivers_with_eta")
@@ -165,16 +210,11 @@ def drivers_with_eta(
     user_lng: float = Query(...),
     user=Depends(verify_firebase_token)
 ):
-    """
-    Returns all jeep locations with distance, ETA, and route geometry to user.
-    Passengers see all drivers; drivers only see themselves.
-    """
-    role = user.get("role", "passenger")  # default to passenger
+    role = user.get("role", "passenger")  # default passenger
     uid = user.get("uid")
     result = {}
 
     for jeep_id, loc in jeep_locations.items():
-        # Drivers only see themselves
         if role == "driver" and jeep_id != uid:
             continue
         try:

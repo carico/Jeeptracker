@@ -1,6 +1,19 @@
 // app.js
 // Assumes firebase-config.js loaded and MapLibre script loaded
 
+// --- Firebase Initialization ---
+const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com", // add if using RTDB
+    // Add other fields if needed: storageBucket, messagingSenderId, appId
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const rtdb = firebase.database(); // if using Realtime Database
+
+// --- App variables ---
 let map;
 let markers = {};      // driverId -> marker
 let polylines = {};    // driverId -> polyline geometry
@@ -13,6 +26,8 @@ const passEl = document.getElementById('password');
 const signupBtn = document.getElementById('signup');
 const loginBtn = document.getElementById('login');
 const logoutBtn = document.getElementById('logout');
+
+// ...rest of your app.js code...
 
 // === Auth handlers ===
 signupBtn.onclick = async () => {
@@ -59,46 +74,86 @@ function initMap() {
     map = new maplibregl.Map({
         container: 'map',
         style: 'https://demotiles.maplibre.org/style.json',
-        center: [120.9842, 14.5995], // default center
+        center: [121.0437, 14.6760], // Quezon City
         zoom: 13
     });
 
-    let userMoved = false;
-    map.on('dragstart', () => userMoved = true);
-    map.on('zoomstart', () => userMoved = true);
+    map.addControl(new maplibregl.NavigationControl());
 
+    // --- User location ---
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(pos => {
-            const lng = pos.coords.longitude;
-            const lat = pos.coords.latitude;
-            map.setCenter([lng, lat]);
+            const userCoords = [pos.coords.longitude, pos.coords.latitude];
+            map.setCenter(userCoords);
             map.setZoom(15);
-            new maplibregl.Marker({ color: 'red' })
-                .setLngLat([lng, lat])
-                .setPopup(new maplibregl.Popup().setText("You are here"))
-                .addTo(map);
+
+            new maplibregl.Marker({
+                color: '#FF0000', 
+                draggable: false
+            })
+            .setLngLat(userCoords)
+            .setPopup(new maplibregl.Popup({ offset: 25 }).setText("You are here"))
+            .addTo(map);
         });
     }
+}
 
-    function addOrUpdateMarker(id, loc, popupHTML=null){
-        const coords = [loc.lng, loc.lat];
-        if(!map) return;
+// --- Add or update driver marker with Figma styling ---
+function addOrUpdateMarker(id, loc, popupHTML=null){
+    const coords = [loc.lng, loc.lat];
+    if(!map) return;
 
-        if(markers[id]){
-            markers[id].setLngLat(coords);
-            if(popupHTML) markers[id].setPopup(new maplibregl.Popup({ offset:25 }).setHTML(popupHTML));
-        } else {
-            const el = document.createElement('div');
-            el.className='driver-marker';
-            el.innerText='J';
-            const marker = new maplibregl.Marker(el).setLngLat(coords);
-            if(popupHTML) marker.setPopup(new maplibregl.Popup({ offset:25 }).setHTML(popupHTML));
-            marker.addTo(map);
-            markers[id] = marker;
-        }
+    if(markers[id]){
+        markers[id].setLngLat(coords);
+        if(popupHTML) markers[id].setPopup(new maplibregl.Popup({ offset: 25 }).setHTML(popupHTML));
+    } else {
+        const el = document.createElement('div');
+        el.className = 'driver-marker';
+        el.innerText = 'J'; // Or use SVG for Figma icon
+        el.style.background = '#FF7F50'; // Figma color
+        el.style.color = '#fff';
+        el.style.fontWeight = 'bold';
+        el.style.textAlign = 'center';
+        el.style.borderRadius = '4px';
+        el.style.padding = '4px 6px';
+        el.style.cursor = 'pointer';
+
+        const marker = new maplibregl.Marker(el)
+            .setLngLat(coords);
+        if(popupHTML) marker.setPopup(new maplibregl.Popup({ offset:25 }).setHTML(popupHTML));
+        marker.addTo(map);
+        markers[id] = marker;
+    }
+}
+
+// --- Draw polyline route with Figma style ---
+function drawRoute(jeepId){
+    if(!map || !polylines[jeepId]) return;
+
+    const coords = polylines[jeepId];
+    const layerId = `route-${jeepId}`;
+
+    if(map.getSource(layerId)){
+        map.removeLayer(layerId);
+        map.removeSource(layerId);
     }
 
-    window.addOrUpdateMarker = addOrUpdateMarker;
+    map.addSource(layerId, { 
+        type:'geojson', 
+        data:{ type:'Feature', geometry:{ type:'LineString', coordinates: coords } }
+    });
+
+    map.addLayer({
+        id: layerId,
+        type:'line',
+        source: layerId,
+        layout:{ 'line-join':'round','line-cap':'round' },
+        paint:{ 'line-color':'#1E90FF', 'line-width':5, 'line-opacity':0.8 } // Figma style
+    });
+
+    // Fit map to route bounds
+    const bounds = coords.reduce((b,c)=>b.extend(c), new maplibregl.LngLatBounds(coords[0], coords[0]));
+    map.fitBounds(bounds, { padding: 30 });
 }
 
 // --- Firebase Realtime listeners ---
@@ -250,32 +305,3 @@ document.getElementById('pay').onclick = async ()=>{
 };
 // === LIVE MAPLIBRE MAP ===
 let livemap;
-
-function initMap() {
-    livemap = new maplibregl.Map({
-        container: 'map',
-        style: 'https://demotiles.maplibre.org/style.json',
-        center: [121.0437, 14.6760], // temporary center (Quezon City)
-        zoom: 13
-    });
-
-    // Add zoom buttons
-    livemap.addControl(new maplibregl.NavigationControl());
-
-    console.log("MapLibre map initialized");
-}
-// initializes afte r page load
-window.addEventListener("load", initMap);
-
-// Run map init when Home page is shown
-document.addEventListener("DOMContentLoaded", () => {
-    const homeSection = document.getElementById("home-section");
-
-    const observer = new MutationObserver(() => {
-        if (!homeSection.classList.contains("hidden")) {
-            setTimeout(() => initMap(), 200);
-        }
-    });
-
-    observer.observe(homeSection, { attributes: true, attributeFilter: ["class"] });
-});
