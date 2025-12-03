@@ -204,4 +204,3 @@ document.getElementById('pay').onclick = async () => {
 
     alert(`Paid ₱${charge.toFixed(2)} for this ride!`);
 };
-
