@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jeepney Tracker</title>
+  <link href="https://unpkg.com/maplibre-gl@2.6.1/dist/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    /* Reset and base styling */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body, html { width: 100%; height: 100%; font-family: Arial, sans-serif; }
+    button { cursor: pointer; padding: 10px 16px; border: none; border-radius: 6px; background-color: #1A94E3; color: white; font-weight: bold; }
+
+    /* Sections styling */
+    section { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+    section.active { display: block; }
+
+    /* Login styling */
+    #login { display: flex; flex-direction: column; justify-content: center; align-items: center; background: #1A94E3; }
+    #login button { margin-top: 20px; }
+
+    /* Map styling */
+    #home1 { display: flex; flex-direction: column; }
+    #map { width: 100%; height: 100vh; }
+
+    /* Search UI */
+    .search-bar {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(33,168,215,0.65);
+      border-radius: 12px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 10;
+    }
+    .search-bar input { border: none; border-radius: 6px; padding: 6px; width: 200px; }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN PAGE -->
+  <section id="login" class="active">
+    <h1 style="color:white;">Login Page</h1>
+    <button onclick="showPage('home1')">Login → Home 1</button>
+  </section>
+
+  <!-- HOME 1 PAGE -->
+  <section id="home1">
+    <div id="map"></div>
+    <div class="search-bar">
+      <input type="text" placeholder="Your location" id="user-location">
+      <input type="text" placeholder="Destination" id="destination">
+      <button onclick="getRoute()">Go</button>
+    </div>
+    <button style="position:absolute; bottom:20px; left:20px;" onclick="showPage('login')">Logout</button>
+  </section>
+
+  <script src="https://unpkg.com/maplibre-gl@2.6.1/dist/maplibre-gl.js"></script>
+  <script>
+    let map;
+    let userMarker;
+    let driverMarkers = {};
+
+    function showPage(pageId) {
+      document.querySelectorAll('section').forEach(sec => sec.classList.remove('active'));
+      document.getElementById(pageId).classList.add('active');
+      if(pageId === 'home1') initMap();
+    }
+
+    async function initMap() {
+      if(map) return; // prevent re-init
+      map = new maplibregl.Map({
+        container: 'map',
+        style: 'https://demotiles.maplibre.org/style.json', // replace with your own style if needed
+        center: [121.0, 14.6], // default coords if geolocation fails
+        zoom: 14
+      });
+
+      // Add navigation controls
+      map.addControl(new maplibregl.NavigationControl());
+
+      // Show user location
+      if(navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+          const lngLat = [pos.coords.longitude, pos.coords.latitude];
+          map.setCenter(lngLat);
+          userMarker = new maplibregl.Marker({color:'blue'}).setLngLat(lngLat).addTo(map);
+        });
+      }
+
+      // Fetch nearby drivers every 5 seconds
+      setInterval(updateDrivers, 5000);
+    }
+
+    async function updateDrivers() {
+      try {
+        const userPos = userMarker.getLngLat();
+        const res = await fetch(`http://127.0.0.1:8000/drivers_with_eta?user_lat=${userPos.lat}&user_lng=${userPos.lng}`);
+        const data = await res.json();
+
+        // Remove old markers
+        Object.values(driverMarkers).forEach(m => m.remove());
+        driverMarkers = {};
+
+        for(const [id, loc] of Object.entries(data)) {
+          const marker = new maplibregl.Marker({color:'red'}).setLngLat([loc.lng, loc.lat]).addTo(map);
+          driverMarkers[id] = marker;
+        }
+      } catch(err) {
+        console.error("Failed to fetch drivers:", err);
+      }
+    }
+
+    async function getRoute() {
+      const userPos = userMarker.getLngLat();
+      const destInput = document.getElementById('destination').value;
+      if(!destInput) return alert("Enter a destination");
+
+      // For demo, let's just pick random nearby coords as "destination"
+      const endLat = userPos.lat + 0.005;
+      const endLng = userPos.lng + 0.005;
+
+      const res = await fetch(`http://127.0.0.1:8000/route?start_lat=${userPos.lat}&start_lng=${userPos.lng}&end_lat=${endLat}&end_lng=${endLng}`);
+      const routeData = await res.json();
+
+      const route = routeData.geometry.map(c => [c[1], c[0]]); // convert to lng,lat
+      if(map.getSource('route')) map.removeLayer('routeLayer'); map.removeSource('route');
+      map.addSource('route', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: route }}});
+      map.addLayer({ id:'routeLayer', type:'line', source:'route', layout:{'line-join':'round','line-cap':'round'}, paint:{'line-color':'#FF0000','line-width':4}});
+    }
+  </script>
+</body>
+</html>
