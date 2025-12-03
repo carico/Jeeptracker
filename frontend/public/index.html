@@ -12,8 +12,6 @@
         #map-container { display: none; height: 100%; }
         #map { height: 70%; }
         #controls { padding: 10px; background: #f9f9f9; }
-        #balance-popup { margin-top: 10px; }
-        #auth { padding: 20px; background: #f0f0f0; }
         input { margin: 5px 0; padding: 5px; width: 150px; }
         button { margin: 5px; padding: 5px 10px; }
     </style>
@@ -25,13 +23,9 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-
-    <!-- html5-qrcode -->
-    <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body>
 
-<!-- Authentication UI -->
 <div id="auth">
     <h2>Jeepney Tracker</h2>
     <div id="user-ui">
@@ -41,11 +35,11 @@
         <button id="login">Login</button>
     </div>
     <div id="loggedin" style="display:none;">
+        <span id="welcome"></span>
         <button id="logout">Logout</button>
     </div>
 </div>
 
-<!-- Map and Controls -->
 <div id="map-container">
     <div id="map"></div>
     <div id="controls">
@@ -53,56 +47,141 @@
         <input id="dest-lng" placeholder="Destination lng" />
         <button id="calc">Calculate Fare</button>
         <div id="fare-result"></div>
-        <div id="balance-popup">Balance: ₱<span id="balance-amt">0.00</span> <button id="pay">Pay</button></div>
-        <div id="qr-area"></div>
     </div>
 </div>
 
-<!-- Firebase config and app logic -->
-<script src="/src/firebase-config.js"></script>
-<script src="/src/app.js"></script>
-
 <script>
-    // Initialize the map
-    const map = L.map('map').setView([14.5995, 120.9842], 15);
+    // ----------------------------
+    // Firebase configuration
+    // ----------------------------
+    const firebaseConfig = {
+        apiKey: "YOUR_FIREBASE_API_KEY",
+        authDomain: "YOUR_PROJECT.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID",
+        databaseURL: "YOUR_DATABASE_URL"
+    };
+    firebase.initializeApp(firebaseConfig);
 
-    // Add OpenStreetMap tiles
+    const auth = firebase.auth();
+
+    // ----------------------------
+    // Elements
+    // ----------------------------
+    const userUI = document.getElementById("user-ui");
+    const loggedInUI = document.getElementById("loggedin");
+    const welcome = document.getElementById("welcome");
+    const mapContainer = document.getElementById("map-container");
+    const fareResult = document.getElementById("fare-result");
+
+    // ----------------------------
+    // Map initialization
+    // ----------------------------
+    const map = L.map('map').setView([14.5995, 120.9842], 15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    // Fetch jeep locations from FastAPI
-    function loadJeepLocations() {
-        fetch('http://127.0.0.1:8000/locations')
-            .then(response => response.json())
-            .then(data => {
-                const routePoints = [];
+    let jeepMarkers = {};
 
-                data.forEach(loc => {
-                    // Add marker for each jeep
-                    L.marker([loc.lat, loc.lng])
-                        .addTo(map)
-                        .bindPopup(`Jeep ID: ${loc.id}`);
+    // ----------------------------
+    // Authentication
+    // ----------------------------
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            userUI.style.display = "none";
+            loggedInUI.style.display = "block";
+            mapContainer.style.display = "block";
+            welcome.textContent = `Welcome, ${user.email}`;
+            startLiveUpdate(user);
+        } else {
+            userUI.style.display = "block";
+            loggedInUI.style.display = "none";
+            mapContainer.style.display = "none";
+            stopLiveUpdate();
+        }
+    });
 
-                    // Save points for polyline
-                    routePoints.push([loc.lat, loc.lng]);
-                });
+    document.getElementById("signup").onclick = async () => {
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+        try { await auth.createUserWithEmailAndPassword(email, password); }
+        catch(e) { alert(e.message); }
+    };
 
-                // Draw polyline connecting jeep positions
-                if (routePoints.length > 1) {
-                    L.polyline(routePoints, {color: 'blue'}).addTo(map);
-                }
-            })
-            .catch(err => console.error('Error fetching locations:', err));
+    document.getElementById("login").onclick = async () => {
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+        try { await auth.signInWithEmailAndPassword(email, password); }
+        catch(e) { alert(e.message); }
+    };
+
+    document.getElementById("logout").onclick = async () => {
+        await auth.signOut();
+    };
+
+    // ----------------------------
+    // Live Jeep Locations
+    // ----------------------------
+    let liveUpdateInterval;
+
+    function startLiveUpdate(user) {
+        fetchJeepLocations(user); // initial load
+        liveUpdateInterval = setInterval(() => fetchJeepLocations(user), 5000); // every 5 seconds
     }
 
-    // Load locations when map container is shown
-    document.addEventListener('DOMContentLoaded', () => {
-        // Example: show map after login (adjust as needed)
-        // document.getElementById('map-container').style.display = 'block';
-        loadJeepLocations();
-    });
+    function stopLiveUpdate() {
+        clearInterval(liveUpdateInterval);
+    }
+
+    async function fetchJeepLocations(user) {
+        const token = await user.getIdToken();
+        fetch('http://127.0.0.1:8000/locations', {
+            headers: { "Authorization": "Bearer " + token }
+        })
+        .then(res => res.json())
+        .then(data => {
+            data.forEach(loc => {
+                if (jeepMarkers[loc.id]) {
+                    jeepMarkers[loc.id].setLatLng([loc.lat, loc.lng]);
+                } else {
+                    jeepMarkers[loc.id] = L.marker([loc.lat, loc.lng])
+                        .addTo(map)
+                        .bindPopup(`Jeep ID: ${loc.id}`);
+                }
+            });
+        })
+        .catch(err => console.error("Error fetching jeep locations:", err));
+    }
+
+    // ----------------------------
+    // Route & fare calculation
+    // ----------------------------
+    document.getElementById("calc").onclick = async () => {
+        const startLat = 14.5995; // For demo, current location fixed
+        const startLng = 120.9842;
+        const endLat = parseFloat(document.getElementById("dest-lat").value);
+        const endLng = parseFloat(document.getElementById("dest-lng").value);
+
+        const user = auth.currentUser;
+        if (!user) { alert("Not logged in"); return; }
+        const token = await user.getIdToken();
+
+        fetch(`http://127.0.0.1:8000/route?start_lat=${startLat}&start_lng=${startLng}&end_lat=${endLat}&end_lng=${endLng}`, {
+            headers: { "Authorization": "Bearer " + token }
+        })
+        .then(res => res.json())
+        .then(data => {
+            fareResult.textContent = `Distance: ${data.distance_km} km | Fare: ₱${data.fare_php}`;
+            const polyline = L.polyline(data.geometry, { color: 'red' }).addTo(map);
+            map.fitBounds(polyline.getBounds());
+        })
+        .catch(err => console.error("Error fetching route:", err));
+    };
 </script>
+
 
 </body>
 </html>

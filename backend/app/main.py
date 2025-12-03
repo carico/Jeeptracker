@@ -16,16 +16,23 @@ from firebase_admin import auth as firebase_auth, credentials
 load_dotenv()  # read .env in backend folder
 
 ORS_API_KEY = os.getenv("ORS_API_KEY")
-FIREBASE_CRED_FILE = os.getenv("FIREBASE_CRED_JSON")  # path to Firebase service account JSON
+
+# ----------------------------
+# Auto-detect Firebase JSON
+# ----------------------------
+# Put your Firebase JSON here in the backend folder
+DEFAULT_FIREBASE_JSON = os.path.join(os.path.dirname(__file__), "..", "iwas123jeepney-firebase-adminsdk-fbsvc-e998f6b7e5.json")
+
+FIREBASE_CRED_JSON = os.getenv("FIREBASE_CRED_JSON", DEFAULT_FIREBASE_JSON)
 
 if not ORS_API_KEY:
     raise RuntimeError("ORS_API_KEY not set in environment")
 
-if not FIREBASE_CRED_FILE or not os.path.exists(FIREBASE_CRED_FILE):
-    raise RuntimeError("FIREBASE_CRED_JSON not set or file does not exist")
+if not os.path.isfile(FIREBASE_CRED_JSON):
+    raise RuntimeError(f"Firebase JSON file not found at: {FIREBASE_CRED_JSON}")
 
 # Initialize Firebase Admin
-cred = credentials.Certificate(FIREBASE_CRED_FILE)
+cred = credentials.Certificate(FIREBASE_CRED_JSON)
 firebase_admin.initialize_app(cred)
 
 # ----------------------------
@@ -64,10 +71,8 @@ jeep_locations = {}
 # Fare calculation
 # ----------------------------
 BASE_FARE_PHP = 13.0
-STUDENT_BASE_FARE_PHP = 13.0
 BASE_KM = 4.0
 PER_KM_PHP = 2.5
-
 
 def compute_fare(distance_km: float) -> float:
     if distance_km <= BASE_KM:
@@ -129,7 +134,6 @@ def get_locations():
 
 @app.post("/jeep/update-location", response_model=Location)
 def update_location(loc: Location, user=Depends(verify_firebase_token)):
-    # Only authenticated users can update jeep locations
     jeep_locations[loc.id] = loc.dict()
     return jeep_locations[loc.id]
 
@@ -141,14 +145,13 @@ def get_route(
     end_lng: float = Query(...),
     user=Depends(verify_firebase_token)
 ):
-    # Only authenticated users can get route/fare
     distance_m, duration_s, geometry = ors_route(start_lng, start_lat, end_lng, end_lat)
     distance_km = round(distance_m / 1000.0, 3)
     fare = compute_fare(distance_km)
     return RouteResponse(
-        distance_m=round(distance_m,2),
+        distance_m=round(distance_m, 2),
         distance_km=distance_km,
-        duration_s=round(duration_s,1),
+        duration_s=round(duration_s, 1),
         geometry=geometry,
         fare_php=fare
     )
