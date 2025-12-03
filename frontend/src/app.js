@@ -2,17 +2,19 @@
 // Assumes firebase-config.js loaded and MapLibre script loaded
 
 let map;
-let markers = {}; // driverId -> marker
+let markers = {};      // driverId -> marker
+let polylines = {};    // driverId -> polyline geometry
+let userRole = "passenger"; // default
 const backendBase = 'http://localhost:8000'; // change when deployed
 
-// --- Auth UI ---
+// === Auth UI ===
 const emailEl = document.getElementById('email');
 const passEl = document.getElementById('password');
 const signupBtn = document.getElementById('signup');
 const loginBtn = document.getElementById('login');
 const logoutBtn = document.getElementById('logout');
 
-// --- Auth handlers ---
+// === Auth handlers ===
 signupBtn.onclick = async () => {
     const email = emailEl.value, pass = passEl.value;
     try { await auth.createUserWithEmailAndPassword(email, pass); alert('Signed up'); }
@@ -27,14 +29,22 @@ loginBtn.onclick = async () => {
 
 logoutBtn.onclick = () => auth.signOut();
 
-auth.onAuthStateChanged(user => {
+// === After login ===
+auth.onAuthStateChanged(async user => {
     if(user){
+        const tokenResult = await user.getIdTokenResult();
+        userRole = tokenResult.claims.role || "passenger";
+
         document.getElementById('user-ui').style.display='none';
         document.getElementById('loggedin').style.display='block';
         document.getElementById('map-container').style.display='flex';
+
         initMap();
         initRealtimeListeners();
         loadBalance(user.uid);
+
+        if(userRole === "passenger") startFetchingJeepsETA();
+        else if(userRole === "driver") startUpdatingDriverLocation(user.uid);
     } else {
         document.getElementById('user-ui').style.display='block';
         document.getElementById('loggedin').style.display='none';
@@ -42,100 +52,140 @@ auth.onAuthStateChanged(user => {
     }
 });
 
-// --- Map setup ---
+// === Map setup ===
 function initMap() {
     if (map) return; // already initialized
 
     map = new maplibregl.Map({
         container: 'map',
         style: 'https://demotiles.maplibre.org/style.json',
-        center: [120.9842, 14.5995], // default center (in case geolocation fails)
+        center: [120.9842, 14.5995], // default center
         zoom: 13
     });
 
     let userMoved = false;
-
-    // Detect user manual interaction
     map.on('dragstart', () => userMoved = true);
     map.on('zoomstart', () => userMoved = true);
 
-    // Try to get browser geolocation
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(pos => {
             const lng = pos.coords.longitude;
             const lat = pos.coords.latitude;
-
-            // Center map on user location initially
             map.setCenter([lng, lat]);
             map.setZoom(15);
-
-            // Add a marker for user's location (optional)
             new maplibregl.Marker({ color: 'red' })
                 .setLngLat([lng, lat])
                 .setPopup(new maplibregl.Popup().setText("You are here"))
                 .addTo(map);
-        }, err => {
-            console.warn("Geolocation failed or denied", err);
         });
     }
 
-    // Update markers only if the user hasn't manually moved the map
-    function addOrUpdateMarker(id, loc) {
+    function addOrUpdateMarker(id, loc, popupHTML=null){
         const coords = [loc.lng, loc.lat];
-        if (!map) return;
+        if(!map) return;
 
-        if (markers[id]) {
+        if(markers[id]){
             markers[id].setLngLat(coords);
+            if(popupHTML) markers[id].setPopup(new maplibregl.Popup({ offset:25 }).setHTML(popupHTML));
         } else {
             const el = document.createElement('div');
-            el.className = 'driver-marker';
-            el.innerText = 'J';
-            markers[id] = new maplibregl.Marker(el).setLngLat(coords).addTo(map);
-        }
-
-        // Auto-center only if user hasn't dragged yet
-        if (!userMoved) {
-            map.setCenter(coords);
+            el.className='driver-marker';
+            el.innerText='J';
+            const marker = new maplibregl.Marker(el).setLngLat(coords);
+            if(popupHTML) marker.setPopup(new maplibregl.Popup({ offset:25 }).setHTML(popupHTML));
+            marker.addTo(map);
+            markers[id] = marker;
         }
     }
 
-    // Expose addOrUpdateMarker to global scope
     window.addOrUpdateMarker = addOrUpdateMarker;
 }
 
-// --- Realtime Firebase listeners ---
+// --- Firebase Realtime listeners ---
 function initRealtimeListeners(){
     const driversRef = rtdb.ref('drivers');
-    driversRef.on('child_added', snapshot => updateDriverMarker(snapshot));
-    driversRef.on('child_changed', snapshot => updateDriverMarker(snapshot));
-    driversRef.on('child_removed', snapshot => removeMarker(snapshot.key));
+    driversRef.on('child_added', snap => updateDriverMarker(snap));
+    driversRef.on('child_changed', snap => updateDriverMarker(snap));
+    driversRef.on('child_removed', snap => removeMarker(snap.key));
 }
 
-function updateDriverMarker(snapshot){
-    const id = snapshot.key;
-    const val = snapshot.val();
+function updateDriverMarker(snap){
+    const id = snap.key;
+    const val = snap.val();
+    if(val && val.location && userRole==="driver" && id!==firebase.auth().currentUser.uid) return;
     if(val && val.location) addOrUpdateMarker(id, val.location);
-}
-
-function addOrUpdateMarker(id, loc){
-    const coords = [loc.lng, loc.lat];
-    if(!map) return;
-    if(markers[id]){
-        // Smooth animation
-        markers[id].setLngLat(coords);
-    } else {
-        const el = document.createElement('div');
-        el.className='driver-marker';
-        el.innerText='J';
-        markers[id] = new maplibregl.Marker(el).setLngLat(coords).addTo(map);
-    }
 }
 
 function removeMarker(id){
     if(markers[id]) { markers[id].remove(); delete markers[id]; }
 }
 
-// --- Fare / Route calculation using ORS ---
+// === Passenger: Fetch ETA + routes ===
+async function fetchJeepsWithETA(userLat, userLng){
+    const user = firebase.auth().currentUser;
+    if(!user) return;
+    const token = await user.getIdToken();
+
+    const url = `${backendBase}/drivers_with_eta?user_lat=${userLat}&user_lng=${userLng}`;
+    const res = await fetch(url, { headers: { "Authorization": `Bearer ${token}` }});
+    if(!res.ok) return;
+    const jeeps = await res.json();
+
+    Object.keys(jeeps).forEach(jeepId => {
+        const jeep = jeeps[jeepId];
+        const popupHTML = `
+            Jeep ID: ${jeepId}<br>
+            Distance: ${jeep.distance_km} km<br>
+            ETA: ${jeep.eta_minutes} min
+            <br><button onclick="drawRoute('${jeepId}')">Show Route</button>
+        `;
+        addOrUpdateMarker(jeepId, { lat: jeep.lat, lng: jeep.lng }, popupHTML);
+        polylines[jeepId] = jeep.geometry.map(c => [c[1], c[0]]);
+    });
+}
+
+function startFetchingJeepsETA(){
+    if(!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(pos => {
+        const userLat = pos.coords.latitude;
+        const userLng = pos.coords.longitude;
+        fetchJeepsWithETA(userLat, userLng); // initial
+        setInterval(()=>fetchJeepsWithETA(userLat, userLng), 5000);
+    });
+}
+
+// === Draw polyline for selected driver ===
+function drawRoute(jeepId){
+    if(!map || !polylines[jeepId]) return;
+    const coords = polylines[jeepId];
+    const layerId = `route-${jeepId}`;
+    if(map.getSource(layerId)){
+        map.removeLayer(layerId);
+        map.removeSource(layerId);
+    }
+    map.addSource(layerId, { type:'geojson', data:{ type:'Feature', geometry:{ type:'LineString', coordinates: coords } }});
+    map.addLayer({
+        id: layerId,
+        type:'line',
+        source: layerId,
+        layout:{'line-join':'round','line-cap':'round'},
+        paint:{'line-color':'#FF4500','line-width':4,'line-opacity':0.8}
+    });
+    const bounds = coords.reduce((b,c)=>b.extend(c), new maplibregl.LngLatBounds(coords[0], coords[0]));
+    map.fitBounds(bounds, { padding: 30 });
+}
+
+// === Driver: Update own location ===
+function startUpdatingDriverLocation(driverId){
+    if(!navigator.geolocation) return;
+    navigator.geolocation.watchPosition(pos => {
+        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        rtdb.ref(`drivers/${driverId}/location`).set(loc);
+        addOrUpdateMarker(driverId, loc);
+    }, err => console.warn("Geo error:", err), { enableHighAccuracy:true });
+}
+
+// === Fare / Route calculation remains unchanged ===
 const calcBtn = document.getElementById('calc');
 calcBtn.onclick = async () => {
     const destLat = parseFloat(document.getElementById('dest-lat').value);
@@ -156,43 +206,28 @@ calcBtn.onclick = async () => {
         if(!resp.ok) throw new Error(`Failed to fetch route: ${resp.status}`);
 
         const data = await resp.json();
-
         const geojson = {
-            type: 'Feature',
-            geometry: {
-                type: 'LineString',
-                coordinates: data.geometry.map(([lat,lng]) => [lng,lat])
-            }
+            type:'Feature',
+            geometry: { type:'LineString', coordinates: data.geometry.map(([lat,lng])=>[lng,lat]) }
         };
-
         if(map.getSource('route')){
-            map.removeLayer('route');
-            map.removeSource('route');
+            map.removeLayer('route'); map.removeSource('route');
         }
-
         map.addSource('route', { type:'geojson', data: geojson });
         map.addLayer({
-            id:'route',
-            type:'line',
-            source:'route',
+            id:'route', type:'line', source:'route',
             layout:{'line-join':'round','line-cap':'round'},
             paint:{'line-color':'#1E90FF','line-width':5,'line-opacity':0.8}
         });
-
-        const bounds = data.geometry.reduce((b,coord)=>{
-            return b.extend([coord[1],coord[0]]);
-        }, new maplibregl.LngLatBounds([data.geometry[0][1],data.geometry[0][0]],[data.geometry[0][1],data.geometry[0][0]]));
+        const bounds = data.geometry.reduce((b,c)=>b.extend([c[1],c[0]]), new maplibregl.LngLatBounds([data.geometry[0][1],data.geometry[0][0]],[data.geometry[0][1],data.geometry[0][0]]));
         map.fitBounds(bounds, { padding:30 });
 
-        document.getElementById('fare-result').innerText = 
-            `Distance: ${data.distance_km} km | Duration: ${Math.round(data.duration_s/60)} min | Fare: ₱${data.fare_php}`;
-
+        document.getElementById('fare-result').innerText = `Distance: ${data.distance_km} km | Duration: ${Math.round(data.duration_s/60)} min | Fare: ₱${data.fare_php}`;
         window.lastRouteFare = data.fare_php;
-
     } catch(err){ alert(err.message); }
 };
 
-// --- Balance display ---
+// === Balance display / pay button remain unchanged ===
 async function loadBalance(uid){
     const balRef = rtdb.ref(`users/${uid}/balance`);
     balRef.on('value', snap => {
@@ -201,18 +236,46 @@ async function loadBalance(uid){
     });
 }
 
-// --- Pay button ---
 document.getElementById('pay').onclick = async ()=>{
     const user = firebase.auth().currentUser;
     if(!user) return alert('Login first');
     const uid = user.uid;
     if(!window.lastRouteFare) return alert("Please calculate a route first");
-
     const balRef = rtdb.ref(`users/${uid}/balance`);
     const snap = await balRef.get();
     const bal = (snap.exists() && snap.val()) ? snap.val() : 0;
-
     if(bal < window.lastRouteFare) return alert('Insufficient balance — top up simulated');
     balRef.set(bal - window.lastRouteFare);
     alert(`Paid ₱${window.lastRouteFare.toFixed(2)} for this ride!`);
 };
+// === LIVE MAPLIBRE MAP ===
+let livemap;
+
+function initMap() {
+    livemap = new maplibregl.Map({
+        container: 'map',
+        style: 'https://demotiles.maplibre.org/style.json',
+        center: [121.0437, 14.6760], // temporary center (Quezon City)
+        zoom: 13
+    });
+
+    // Add zoom buttons
+    livemap.addControl(new maplibregl.NavigationControl());
+
+    console.log("MapLibre map initialized");
+}
+// initializes afte r page load
+window.addEventListener("load", initMap);
+
+// Run map init when Home page is shown
+document.addEventListener("DOMContentLoaded", () => {
+    const homeSection = document.getElementById("home-section");
+
+    const observer = new MutationObserver(() => {
+        if (!homeSection.classList.contains("hidden")) {
+            setTimeout(() => initMap(), 200);
+        }
+    });
+
+    observer.observe(homeSection, { attributes: true, attributeFilter: ["class"] });
+});

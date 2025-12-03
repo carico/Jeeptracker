@@ -20,18 +20,18 @@ ORS_API_KEY = os.getenv("ORS_API_KEY")
 # ----------------------------
 # Auto-detect Firebase JSON
 # ----------------------------
-# Put your Firebase JSON here in the backend folder
-DEFAULT_FIREBASE_JSON = os.path.join(os.path.dirname(__file__), "..", "iwas123jeepney-firebase-adminsdk-fbsvc-e998f6b7e5.json")
-
+DEFAULT_FIREBASE_JSON = os.path.join(
+    os.path.dirname(__file__),
+    "..",
+    "iwas123jeepney-firebase-adminsdk-fbsvc-e998f6b7e5.json"
+)
 FIREBASE_CRED_JSON = os.getenv("FIREBASE_CRED_JSON", DEFAULT_FIREBASE_JSON)
 
 if not ORS_API_KEY:
     raise RuntimeError("ORS_API_KEY not set in environment")
-
 if not os.path.isfile(FIREBASE_CRED_JSON):
     raise RuntimeError(f"Firebase JSON file not found at: {FIREBASE_CRED_JSON}")
 
-# Initialize Firebase Admin
 cred = credentials.Certificate(FIREBASE_CRED_JSON)
 firebase_admin.initialize_app(cred)
 
@@ -155,3 +155,42 @@ def get_route(
         geometry=geometry,
         fare_php=fare
     )
+
+# ----------------------------
+# Endpoint: get drivers with ETA to a user (role-based)
+# ----------------------------
+@app.get("/drivers_with_eta")
+def drivers_with_eta(
+    user_lat: float = Query(...),
+    user_lng: float = Query(...),
+    user=Depends(verify_firebase_token)
+):
+    """
+    Returns all jeep locations with distance, ETA, and route geometry to user.
+    Passengers see all drivers; drivers only see themselves.
+    """
+    role = user.get("role", "passenger")  # default to passenger
+    uid = user.get("uid")
+    result = {}
+
+    for jeep_id, loc in jeep_locations.items():
+        # Drivers only see themselves
+        if role == "driver" and jeep_id != uid:
+            continue
+        try:
+            distance_m, duration_s, geometry = ors_route(
+                start_lng=loc["lng"],
+                start_lat=loc["lat"],
+                end_lng=user_lng,
+                end_lat=user_lat
+            )
+            result[jeep_id] = {
+                "lat": loc["lat"],
+                "lng": loc["lng"],
+                "distance_km": round(distance_m / 1000.0, 2),
+                "eta_minutes": round(duration_s / 60.0, 1),
+                "geometry": geometry
+            }
+        except HTTPException:
+            continue
+    return result
