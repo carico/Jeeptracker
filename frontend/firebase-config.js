@@ -14,3 +14,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const rtdb = firebase.database();
+
+// sends it global
+window.auth = auth;
+window.rtdb = rtdb;
