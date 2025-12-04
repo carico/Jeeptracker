@@ -6,7 +6,8 @@
   <title>Jeepney Tracker</title>
 
   <!-- MapLibre CSS -->
-  <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet" />
+  <link href="https://unpkg.com/maplibre-gl@3.6.0/dist/maplibre-gl.css"
+        rel="stylesheet" />
 
   <style>
     body {
@@ -210,105 +211,81 @@
 
 <!-- Home1 Page -->
 <div id="home1" class="page" style="display:none; flex-direction: column;">
-        <div style="display: flex; flex-direction: column; background: #FFFFFF;">
-            <div style="align-self: stretch; display: flex; flex-direction: column; background: linear-gradient(180deg, #31A7E2, #164A86); gap: 53px;">
+    <!-- REAL MAP (MAPLIBR)) -->
+    <div id="map-home1" class="map-container"></div>
+    <div style="display: flex; flex-direction: column; background: transparent; position: relative; z-index: 10;">
+        <div style="display: flex; flex-direction: column; background: linear-gradient(180deg, #31A7E2, #164A86); gap: 53px; padding-bottom: 40px;">
+
+            <div style="align-self: stretch;">
                 <div style="align-self: stretch;">
-                    <div style="align-self: stretch; background-image: url('https://storage.googleapis.com/tagjs-prod.appspot.com/v1/WJAJISfWJo/bathgbqo_expires_30_days.png'); background-size: cover; background-position: center;">
-                        <div style="align-self: stretch; display: flex; align-items: center; background: #21A8D766; border-radius: 10px; padding: 5px 14px; margin: 59px 21px 9px 21px;">
-                            <img
-                                src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/WJAJISfWJo/tcwp8phx_expires_30_days.png" 
-                                style="width: 24px; height: 24px; margin-right: 17px; object-fit: fill;"
-                            />
-                            <span style="color: #FFFFFF; font-size: 14px; font-weight: bold;" >
-                                Search
-                            </span>
-                            <div style="flex: 1; align-self: stretch;">
-                            </div>
-                            <img
-                                src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/WJAJISfWJo/ygjn9lln_expires_30_days.png" 
-                                style="width: 35px; height: 35px; object-fit: fill;"
-                            />
-                        </div>
-                        <div style="align-self: stretch; background: #21A8D766; border-radius: 25px; padding-top: 10px; padding-bottom: 10px; margin-bottom: 134px; margin-left: 21px; margin-right: 21px;">
-                            <div style="align-self: stretch; display: flex; align-items: center; margin-bottom: 9px; margin-left: 31px; margin-right: 31px;">
-                                <img
-                                    src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/WJAJISfWJo/avhwf9bn_expires_30_days.png" 
-                                    style="width: 15px; height: 15px; margin-right: 21px; object-fit: fill;"
-                                />
-                                <span style="color: #FFFFFF; font-size: 14px; font-weight: bold;" >
-                                    Your Location
-                                </span>
-                                <div style="flex: 1; align-self: stretch;">
-                                </div>
-                                <div style="flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 3px;">
-                                    <img
-                                        src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/WJAJISfWJo/qqogujrc_expires_30_days.png" 
-                                        style="width: 5px; height: 5px; object-fit: fill;"
-                                    />
-                                    <img
-                                        src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/WJAJISfWJo/71i4yb6o_expires_30_days.png" 
-                                        style="width: 5px; height: 5px; object-fit: fill;"
-                                    />
-                                    <img
-                                        src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/WJAJISfWJo/3atl6uxr_expires_30_days.png" 
-                                        style="width: 5px; height: 5px; object-fit: fill;"
-                                    />
-                                </div>
-                            </div>
-                            <div style="align-self: stretch; display: flex; flex-direction: column; align-items: flex-end; margin-bottom: 8px;">
-                                <div style="width: 228px; height: 1px; background: #808080; margin-right: 51px;">
-                                </div>
-                            </div>
-                            <div style="align-self: stretch; display: flex; align-items: center; margin-left: 31px; margin-right: 31px;">
-                                <img
-                                    src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/WJAJISfWJo/gtjao2jb_expires_30_days.png" 
-                                    style="width: 16px; height: 16px; margin-right: 20px; object-fit: fill;"
-                                />
-                                <span style="color: #FFFFFF; font-size: 14px; font-weight: bold;" >
-                                    Your Destination
-                                </span>
-                                <div style="flex: 1; align-self: stretch;">
-                                </div>
-                                <img
-                                    src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/WJAJISfWJo/fpus12mn_expires_30_days.png" 
-                                    style="width: 1px; height: 10px; margin-right: 4px; object-fit: fill;"
-                                />
-                                <img
-                                    src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/WJAJISfWJo/7znv7j0r_expires_30_days.png" 
-                                    style="width: 1px; height: 9px; object-fit: fill;"
-                                />
-                            </div>
-                        </div>
-                        <div style="align-self: stretch; display: flex; flex-direction: column; align-items: flex-end; margin-bottom: 437px;">
-                            <div style="display: flex; align-items: center; margin-right: 149px; gap: 18px;">
-                                <img
-                                    src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/WJAJISfWJo/73gtk03j_expires_30_days.png" 
-                                    style="width: 30px; height: 33px; object-fit: fill;"
-                                />
-                                <img
-                                    src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/WJAJISfWJo/q74frp3e_expires_30_days.png" 
-                                    style="width: 31px; height: 31px; object-fit: fill;"
-                                />
-                            </div>
-                        </div>
+                    
+                    <!-- SEARCH BAR -->
+                    <div style="align-self: stretch; display: flex; align-items: center; background: #21A8D766; border-radius: 10px; padding: 5px 14px; margin: 59px 21px 9px 21px;">
+                        <img src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/WJAJISfWJo/tcwp8phx_expires_30_days.png" 
+                             style="width: 24px; height: 24px; margin-right: 17px;">
+                        <span style="color: #FFFFFF; font-size: 14px; font-weight: bold;">Search</span>
+                        <div style="flex: 1;"></div>
+                        <img src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/WJAJISfWJo/ygjn9lln_expires_30_days.png" 
+                             style="width: 35px; height: 35px;">
                     </div>
-                </div>
-                <div style="align-self: stretch; display: flex; flex-direction: column; align-items: center; background: #164A86; border-radius: 50px;">
-                    <div style="width: 112px; height: 6px; background: #D9D9D980; border-radius: 100px; margin-top: 12px; margin-bottom: 4px;cursor: pointer;">
-                        onclick="showPage('Home2')"
+
+                    <!-- LOCATION PANEL -->
+                    <div style="background: #21A8D766; border-radius: 25px; padding-top: 10px; padding-bottom: 10px; margin-bottom: 134px; margin-left: 21px; margin-right: 21px;">
+                        
+                        <!-- Your Location -->
+                        <div style="display: flex; align-items: center; margin-bottom: 9px; margin-left: 31px; margin-right: 31px;">
+                            <img src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/WJAJISfWJo/avhwf9bn_expires_30_days.png"
+                                 style="width: 15px; height: 15px; margin-right: 21px;">
+                            <span style="color: #FFFFFF; font-size: 14px; font-weight: bold;">Your Location</span>
+                            <div style="flex: 1;"></div>
+                            <div style="display: flex; flex-direction: column; gap: 3px;">
+                                <img src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/WJAJISfWJo/qqogujrc_expires_30_days.png" style="width: 5px; height: 5px;">
+                                <img src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/WJAJISfWJo/71i4yb6o_expires_30_days.png" style="width: 5px; height: 5px;">
+                                <img src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/WJAJISfWJo/3atl6uxr_expires_30_days.png" style="width: 5px; height: 5px;">
+                            </div>
+                        </div>
+
+                        <div style="width: 228px; height: 1px; background: #808080; margin: 0 auto 8px auto;"></div>
+
+                        <!-- Destination -->
+                        <div style="display: flex; align-items: center; margin-left: 31px; margin-right: 31px;">
+                            <img src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/WJAJISfWJo/gtjao2jb_expires_30_days.png"
+                                 style="width: 16px; height: 16px; margin-right: 20px;">
+                            <span style="color: #FFFFFF; font-size: 14px; font-weight: bold;">Your Destination</span>
+                            <div style="flex: 1;"></div>
+                            <img src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/WJAJISfWJo/fpus12mn_expires_30_days.png" style="width: 1px; height: 10px; margin-right: 4px;">
+                            <img src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/WJAJISfWJo/7znv7j0r_expires_30_days.png" style="width: 1px; height: 9px;">
+                        </div>
+
                     </div>
-                    <img
-                        src="https://i.imgur.com/1tMFzp8.png" 
-                        style="height: 104px; align-self: stretch; object-fit: fill;"
-                    />
+
+                    <!-- Bottom Buttons -->
+                    <div style="display: flex; justify-content: center; margin-bottom: 350px;">
+                        <img src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/WJAJISfWJo/73gtk03j_expires_30_days.png" style="width: 30px; height: 33px; margin-right: 18px;">
+                        <img src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/WJAJISfWJo/q74frp3e_expires_30_days.png" style="width: 31px; height: 31px;">
+                    </div>
+
                 </div>
             </div>
+
+            <!-- NAVIGATION TO HOME2 -->
+            <div style="display: flex; flex-direction: column; align-items: center; background: #164A86; border-radius: 50px;">
+                 <div style="width: 112px; height: 6px; background: #D9D9D980; border-radius: 100px; margin-top: 12px; margin-bottom: 4px; cursor: pointer;"
+                    onclick="showPage('home2')">
+                </div>
+                <img src="https://i.imgur.com/1tMFzp8.png" style="height: 104px; width: 100%;">
+            </div>
+
         </div>
     </div>
+</div>
+
 
 
 <!-- Home2 Page -->
-<div style="display: none; flex-direction: column; background: #FFFFFF;">
+<div id="home2" class="page" style="display:none;"></div>
+    <div id="map-home2" style="width:100%; height:100%;"></div>
+    <div style="display: none; flex-direction: column; background: #FFFFFF;">
             <div style="align-self: stretch; display: flex; flex-direction: column; background: linear-gradient(180deg, #31A7E2, #164A86);">
             <div style="align-self: stretch; position: relative;">
                 <div style="align-self: stretch; padding-left: 21px; padding-right: 21px; margin-bottom: 375px; background-image: url('https://storage.googleapis.com/tagjs-prod.appspot.com/v1/WJAJISfWJo/wkjfxtzw_expires_30_days.png'); background-size: cover; background-position: center;">
@@ -443,7 +420,8 @@
 
 <!-- HomePage3 -->
 <div id="home3" style="display: none; flex-direction: column; width: 100%; min-height: 100vh; background: #FFFFFF; overflow-x: hidden;">
-        <div style="display: flex; flex-direction: column; background: #FFFFFF;">
+    <div id="map-home3" style="width:100%; height:100%;"></div>  
+    <div style="display: flex; flex-direction: column; background: #FFFFFF;">
         <div style="align-self: stretch; display: flex; flex-direction: column; background: linear-gradient(180deg, #31A7E2, #164A86);">
             <div style="align-self: stretch; position: relative;">
                 <div style="align-self: stretch; padding-left: 21px; padding-right: 21px; margin-bottom: 375px; background-image: url('https://storage.googleapis.com/tagjs-prod.appspot.com/v1/WJAJISfWJo/rv0obsum_expires_30_days.png'); background-size: cover; background-position: center;">
@@ -1418,36 +1396,49 @@
   <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
 
   <script>
-    function showPage(pageID) {
+  function showPage(pageID) {
     const pages = document.querySelectorAll('.page');
-    pages.forEach(page => page.style.display = 'none'); // hide all pages
+    pages.forEach(page => page.style.display = 'none');
+
     const activePage = document.getElementById(pageID);
-    if(activePage) activePage.style.display = 'flex'; // show the selected page
-    }
+    if (activePage) {
+      activePage.style.display = 'flex';
 
-  // Initialize MapLibre map for home1 when displayed
-  function initHome1Map() {
-    const map = new maplibregl.Map({
-      container: 'map-home1',
-      style: 'https://demotiles.maplibre.org/style.json',
+      // Initialize the correct map for that page
+      if (pageID === "home1") initMap("map-home1");
+      if (pageID === "home2") initMap("map-home2");
+      if (pageID === "home3") initMap("map-home3");
+    }
+  }
+
+  // --- UNIVERSAL MAP INITIALIZER (Works for Home1, Home2, Home3) ---
+  let maps = {}; // prevent re-initializing
+
+  function initMap(containerID) {
+    if (maps[containerID]) return; // map already exists → skip
+
+    maps[containerID] = new maplibregl.Map({
+      container: containerID,
+      style: "https://demotiles.maplibre.org/style.json",
       center: [121.0437, 14.6760], // Manila
-      zoom: 12
-    });
-    map.addControl(new maplibregl.NavigationControl());
-    }
-
-    // Login logic to show homepage after successful login
-    const loginBtn = document.getElementById('login-btn');
-    const loginCard = document.getElementById('loginCard');
-    const homepage = document.getElementById('homepage');
-
-    loginBtn.addEventListener('click', () => {
-      // Here you can add Firebase authentication logic
-      // For now, just switch view
-      loginCard.style.display = 'none';
-      homepage.style.display = 'flex';
+      zoom: 13
     });
 
-  </script>
+    maps[containerID].addControl(new maplibregl.NavigationControl());
+  }
+
+  // --- Login Logic ---
+  const loginBtn = document.getElementById('login-btn');
+  const loginCard = document.getElementById('loginCard');
+  const homepage = document.getElementById('homepage');
+
+  loginBtn.addEventListener('click', () => {
+    loginCard.style.display = 'none';
+    homepage.style.display = 'flex';
+
+    // Automatically load Home1 map on login
+    showPage("home1");
+  });
+</script>
 </body>
 </html>
