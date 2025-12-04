@@ -5,17 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Jeepney Tracker</title>
 
-<!-- Figma CSS -->
+<!-- CSS -->
 <link rel="stylesheet" href="style.css">
-
-<!-- MapLibre CSS -->
 <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet"/>
 
 <style>
-/* Map container */
-#map { width: 100%; height: 60vh; border-radius: 12px; margin-bottom: 10px; }
+#map { width:100%; height:60vh; border-radius:12px; margin-bottom:10px; }
 .driver-marker { background:#FF7F50; color:#fff; padding:4px 6px; border-radius:4px; font-weight:bold; text-align:center; cursor:pointer; }
-.popup-content { font-family:'Arial', sans-serif; font-size:14px; line-height:1.3; }
+.popup-content { font-family:'Arial',sans-serif; font-size:14px; line-height:1.3; }
 .role-section { margin:10px 0; padding:10px; background:#f9f9f9; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
 input, button { margin:5px 2px; padding:6px 10px; border-radius:5px; border:1px solid #ccc; }
 button { background:#FF7F50; color:#fff; border:none; cursor:pointer; }
@@ -25,7 +22,6 @@ button:hover { background:#e06b3f; }
 </head>
 <body>
 
-<!-- === Login / Signup UI === -->
 <div id="user-ui" class="role-section">
     <h2>Login / Signup</h2>
     <input id="email" type="email" placeholder="Email">
@@ -34,19 +30,16 @@ button:hover { background:#e06b3f; }
     <button id="login">Login</button>
 </div>
 
-<!-- === Logged-in UI === -->
 <div id="loggedin" style="display:none;">
     <div class="role-section">
         <button id="logout">Logout</button>
         <h3>Balance: ₱<span id="balance-amt">0.00</span></h3>
     </div>
 
-    <!-- Map -->
     <div id="map-container">
-        <div id="map" style="width:100%; height:500px;"></div>
+        <div id="map"></div>
     </div>
 
-    <!-- Passenger Controls -->
     <div id="passenger-controls" class="role-section" style="display:none;">
         <h4>Calculate Route / Fare</h4>
         <input id="dest-lat" type="number" placeholder="Destination Latitude" step="0.000001">
@@ -56,7 +49,6 @@ button:hover { background:#e06b3f; }
         <p id="fare-result"></p>
     </div>
 
-    <!-- Driver/Admin Controls -->
     <div id="driver-controls" class="role-section" style="display:none;">
         <h4>Driver Management</h4>
         <input id="driver-id" type="text" placeholder="Driver ID">
@@ -69,14 +61,17 @@ button:hover { background:#e06b3f; }
     </div>
 </div>
 
-<!-- Scripts -->
+<!-- Firebase & MapLibre SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
-<script src="firebase-config.js"></script>
 
+<!-- Firebase Config will run first before app.js-->
+<script src="firebase-config.js"></script>
+<!-- Main App JS Script -->
 <script src="app.js"></script>
+
 <script>
 /* === Role-based UI and map initialization === */
 const markers = {};
