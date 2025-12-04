@@ -1,0 +1,38 @@
+name: Firebase Hosting CI/CD
+
+on:
+  push:
+    branches:
+      - main  # deploy when you push to main branch
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout your repo
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      # 2. Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'  # use your preferred Node.js version
+
+      # 3. Install Firebase CLI
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      # 4. Authenticate to Firebase
+      - name: Firebase login
+        uses: FirebaseExtended/action-hosting-deploy@v1
+        with:
+          repoToken: "${{ secrets.GITHUB_TOKEN }}"
+          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}"
+          channelId: live  # for production deploy
+          projectId: iwas123jeepney
+
+      # 5. Deploy
+      - name: Deploy to Firebase Hosting
+        run: firebase deploy --only hosting

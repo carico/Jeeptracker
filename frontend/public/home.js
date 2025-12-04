@@ -16,13 +16,41 @@ let userRole = "passenger";
 const backendBase = "http://localhost:8000";
 
 // ================= NAVIGATION =================
-document.querySelectorAll('button[data-target]').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
+
+// List of all page IDs
+const pages = [
+  "login",
+  "home1",
+  "home2",
+  "home3",
+  "qrreader1",
+  "qrreader2",
+  "receipt1",
+  "receipt2",
+  "receipt3",
+  "account1",
+  "account2",
+  "account3"
+];
+
+// Function to show a specific page and hide all others
+function showPage(pageId) {
+  pages.forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.style.display = (id === pageId) ? "flex" : "none";
+  });
+}
+
+// Auto-add click listeners for buttons with data-target
+document.querySelectorAll('button[data-target]').forEach(btn => {
+  btn.addEventListener('click', () => {
     const targetId = btn.dataset.target;
-    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-    document.getElementById(targetId)?.classList.add('active');
+    showPage(targetId);
   });
 });
+
+// Show login page by default on page load
+showPage("login");
 
 // ================= AUTH FUNCTIONS =================
 async function registerDriver(email,password){ 
